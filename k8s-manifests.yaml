@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservice-app
+  labels:
+    app: microservice-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: microservice-app
+  template:
+    metadata:
+      labels:
+        app: microservice-app
+    spec:
+      containers:
+      - name: microservice-app
+        image: microservice-app:v1
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5000
+          name: http
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: microservice-app-service
+  labels:
+    app: microservice-app
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 5000
+    name: http
+  selector:
+    app: microservice-app
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: microservice-app-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: app.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: microservice-app-service
+            port:
+              number: 80

@@ -1,0 +1,38 @@
+﻿apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aws-metrics-backup
+  namespace: monitoring
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: aws-cli-sync
+            image: amazon/aws-cli:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Backing up cluster chaos status to AWS S3..."
+              echo "Backup run at $(date)" > /tmp/status.txt
+              aws s3 cp /tmp/status.txt s3://$(S3_BUCKET_NAME)/backups/chaos-status.txt
+            env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-observability-credentials
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-observability-credentials
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: S3_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: aws-observability-credentials
+                  key: S3_BUCKET_NAME
+          restartPolicy: OnFailure
