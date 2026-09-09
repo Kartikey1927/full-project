@@ -1,34 +1,28 @@
-from flask import Flask, Response
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
-import time
-import random
+﻿from flask import Flask, jsonify
+from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
+import os
 
 app = Flask(__name__)
 
-# Prometheus Metrics (SLI Tracking)
-REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP Requests', ['method', 'endpoint', 'status_code'])
-REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP Request Latency', ['endpoint'])
+REQUEST_COUNT = Counter('app_requests_total', 'Total HTTP Request Count')
+APP_VERSION = "v1.1.0"
 
 @app.route('/')
-def home():
-    start_time = time.time()
-    
-    # Simulate slight random processing latency
-    latency = random.uniform(0.01, 0.05)
-    time.sleep(latency)
-    
-    REQUEST_COUNT.labels(method='GET', endpoint='/', status_code='200').inc()
-    REQUEST_LATENCY.labels(endpoint='/').observe(time.time() - start_time)
-    
-    return "Microservice Running Cleanly!", 200
+def hello():
+    REQUEST_COUNT.inc()
+    return jsonify({
+        "message": "Microservice is live with Prometheus metrics!",
+        "version": APP_VERSION,
+        "environment": os.getenv("ENVIRONMENT", "development")
+    })
 
-@app.route('/health')
-def health():
-    return {"status": "UP"}, 200
+@app.route('/healthz')
+def health_check():
+    return jsonify({"status": "UP"}), 200
 
 @app.route('/metrics')
 def metrics():
-    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
