@@ -1,4 +1,4 @@
-﻿apiVersion: v1
+apiVersion: v1
 kind: Namespace
 metadata:
   name: monitoring
@@ -36,6 +36,8 @@ spec:
       labels:
         app: prometheus
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: minikube-m02   # Forces Prometheus onto worker node 2
       containers:
         - name: prometheus
           image: prom/prometheus:v2.45.0
