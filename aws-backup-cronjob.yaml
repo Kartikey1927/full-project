@@ -16,9 +16,15 @@ spec:
             - /bin/sh
             - -c
             - |
-              echo "Backing up cluster chaos status to AWS S3..."
+              echo "Backing up cluster chaos status..."
               echo "Backup run at $(date)" > /tmp/status.txt
-              aws s3 cp /tmp/status.txt s3://$(S3_BUCKET_NAME)/backups/chaos-status.txt
+
+              if [ "$S3_BUCKET_NAME" = "my-dummy-s3-bucket" ]; then
+                echo "[MOCK MODE] Skipping real AWS S3 upload with dummy credentials."
+                echo "Successfully simulated upload of /tmp/status.txt to s3://$S3_BUCKET_NAME/backups/chaos-status.txt"
+              else
+                aws s3 cp /tmp/status.txt s3://$S3_BUCKET_NAME/backups/chaos-status.txt
+              fi
             env:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
